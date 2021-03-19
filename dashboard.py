@@ -3,13 +3,11 @@ from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
 from random import randint
-from serialcoms import SerialIO
 
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.serial = SerialIO()
         self.graphWidget = pg.PlotWidget()
         self.setCentralWidget(self.graphWidget)
 
@@ -22,7 +20,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.data_line =  self.graphWidget.plot(self.x, self.y, pen=pen)
         
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(1000)
+        self.timer.setInterval(100)
         self.timer.timeout.connect(self.update_plot_data)
         self.timer.start()
 
