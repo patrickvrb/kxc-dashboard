@@ -4,8 +4,7 @@ from time import sleep
 
 import serial
 from PyQt5 import QtWidgets
-
-from dashboard import MainWindow
+from serial.serialutil import SerialException
 
 
 class SerialIO():
@@ -15,18 +14,18 @@ class SerialIO():
     def setup(self):
         try:
             self.arduinoData = serial.Serial('COM3', 9600)
-        except:
+        except SerialException:
             self.arduinoData = serial.Serial('COM5', 9600)
             
         sleep(2)
         # mode = input('Modo? 0 para Real Time e 1 para Catch Dump\t')
-        mode = '1'
-        if(mode == '0'):
-            self.real_time_read()
-        elif (mode == '1'):
-            self.ard_dump_mode()
-        else:
-            print('Modo não existente')
+        # mode = '1'
+        # if(mode == '0'):
+        #     self.real_time_read()
+        # elif (mode == '1'):
+        #     self.ard_dump_mode()
+        # else:
+        #     print('Modo não existente')
     
     def get_integer_value(self, str_value):
         if str_value.startswith('+'):
@@ -41,6 +40,8 @@ class SerialIO():
     
     def get_x_y_z_dump(self, input_str):
         var_list = input_str.split(' ')[1:][:-4] # Retira o primeiro e os quatro últimos elementos da linha
+        if len(var_list) == 0:
+            return 0, 0, 0    
         x, y, z = [self.get_integer_value(value) for value in var_list]
         return x, y, z
     
@@ -66,7 +67,9 @@ class SerialIO():
             angulo = acos(produto_interno/(u*v)) * 57.3 
         except ValueError: 
             angulo = 0
-        return angulo
+        except ZeroDivisionError:
+            angulo = 0
+        return int(round(angulo,0))
         
         
     def ard_dump_mode(self):
@@ -79,24 +82,35 @@ class SerialIO():
         self.arduinoData.flushOutput()
         sleep(1)
         self.catch_dump()
-        
+    
+    def serial_read(self):
+        data = self.arduinoData.read_until().decode('ISO-8859-1')
+        if 'FFFF' in data: # Critério de parada (último índice)
+            raise EOFError
+        else:
+            return self.get_x_y_z_dump(data)
+
                     
     def catch_dump(self):
-        with open('flash_dump.txt', 'w+') as f:
+        with open('flash_dump.txt', 'w') as f:
             while True:
                 sleep(.1)
                 serial_buffer = self.arduinoData.read_until().decode('ISO-8859-1') # Ler linha a linha,  Decodificação para incluir \n, \r
                 if serial_buffer.startswith('0003'): # Primeira medida do dump
                     ref_vector = self.get_x_y_z_dump(self.arduinoData.read_until().decode('ISO-8859-1'))
-                    while not 'FFFF' in serial_buffer: # Critério de parada (último índice)
-                        current_vector = self.get_x_y_z_dump(self.arduinoData.read_until().decode('ISO-8859-1'))
-                        angulo = str(self.angle_calc(ref_vector, current_vector))
-                        f.write(str(round(angulo,0)) + '\n')
-                        print(round(angulo,0))
+                    while True:
+                        try:
+                            current_vector = self.serial_read()
+                            angulo = self.angle_calc(ref_vector, current_vector)
+                            if angulo != 0:
+                                f.write(str(angulo) + '\n')
+                            print(angulo)
+                        except EOFError:
+                            break
                     f.close()
-                    sys.exit()  
-    
-        
+                    return
+                    
+   
         
 
 if __name__ == "__main__":
