@@ -12,25 +12,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        engine = SerialIO()
-        engine.ard_dump_mode()  # Realiza dump do arduino em engine.py
+        self.engine = SerialIO()
+        self.engine.ard_dump_mode()  # Realiza dump do arduino em engine.py
         self.upload_data()
 
     def upload_data(self):
         self.graphWidget = pg.PlotWidget()
         self.setCentralWidget(self.graphWidget)
-        self.y = list()
-        f = open('flash_dump.txt', 'r')
-        while f.readline():
-            # Data points, removendo \n
-            self.y.append(int(f.readline().rstrip()))
-        f.close()
+
+        self.y = self.engine.get_angle_list()
 
         self.x = list(range(len(self.y)))  # y time points
 
         self.graphWidget.setBackground('w')
 
-        pen = pg.mkPen(color=(255, 255, 0))
+        pen = pg.mkPen(color=(255, 0, 0))
         self.data_line = self.graphWidget.plot(self.x, self.y, pen=pen)
 
     def update_plot_data(self, data):

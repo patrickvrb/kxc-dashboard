@@ -16,17 +16,17 @@ class SerialIO():
             self.arduinoData = serial.Serial('COM3', 9600)
         except SerialException:
             self.arduinoData = serial.Serial('COM5', 9600)
-            
+
         sleep(2)
         # mode = input('Modo? 0 para Real Time e 1 para Catch Dump\t')
         # mode = '1'
         # if(mode == '0'):
         #     self.real_time_read()
         # elif (mode == '1'):
-        #     self.ard_dump_mode()
+        #   self.ard_dump_mode()
         # else:
         #     print('Modo não existente')
-    
+
     def get_integer_value(self, str_value):
         if str_value.startswith('+'):
             return int(str_value[1:])
@@ -34,23 +34,24 @@ class SerialIO():
             return int(str_value)
 
     def get_x_y_z(self,  input_str):
-        var_list = input_str.split(' ')[:-1]
+        var_list = input_str.split(' ')
         x, y, z = [self.get_integer_value(value) for value in var_list]
         return x, y, z
-    
+
     def get_x_y_z_dump(self, input_str):
-        var_list = input_str.split(' ')[1:][:-4] # Retira o primeiro e os quatro últimos elementos da linha
+        # Retira o primeiro e os quatro últimos elementos da linha
+        var_list = input_str.split(' ')[1:][:-4]
         if len(var_list) == 0:
-            return 0, 0, 0    
+            return 0, 0, 0
         x, y, z = [self.get_integer_value(value) for value in var_list]
         return x, y, z
-    
+
     def real_time_read(self):
         reference_vector = None
         current_vector = None
         while True:
             normalized_buffer = self.arduinoData.read_until().decode('utf-8')
-            if not normalized_buffer.startswith('==>'):    
+            if not normalized_buffer.startswith('==>'):
                 x, y, z = self.get_x_y_z(normalized_buffer)
                 current_vector = [x, y, z]
                 if reference_vector is None:
@@ -58,60 +59,73 @@ class SerialIO():
                 if current_vector and reference_vector:
                     angulo = self.angle_calc(reference_vector, current_vector)
                     print(round(angulo, 0))
-                    
+
     def angle_calc(self, ref_vector, vector):
         try:
-            produto_interno = sum([vector[i] * ref_vector[i] for i in range(3)])
+            produto_interno = sum([vector[i] * ref_vector[i]
+                                  for i in range(3)])
             u = sqrt(sum([vector[i] * vector[i] for i in range(3)]))
             v = sqrt(sum([ref_vector[i] * ref_vector[i] for i in range(3)]))
-            angulo = acos(produto_interno/(u*v)) * 57.3 
-        except ValueError: 
+            angulo = acos(produto_interno/(u*v)) * 57.3
+        except ValueError:
             angulo = 0
         except ZeroDivisionError:
             angulo = 0
-        return int(round(angulo,0))
-        
-        
+        return int(round(angulo, 0))
+
     def ard_dump_mode(self):
-        self.arduinoData.write('17'.encode('utf-8')) # Forçando modo 17 (Config Mode)
+        # Forçando modo 17 (Config Mode)
+        self.arduinoData.write('17'.encode('utf-8'))
         self.arduinoData.write('\n'.encode('utf-8'))
         self.arduinoData.flushOutput()
         sleep(2)
-        self.arduinoData.write('p 0'.encode('utf-8')) # Printando dados do primeiro diretório
+        # Printando dados do primeiro diretório
+        self.arduinoData.write('p 0'.encode('utf-8'))
         self.arduinoData.write('\n'.encode('utf-8'))
         self.arduinoData.flushOutput()
         sleep(1)
         self.catch_dump()
-    
+
     def serial_read(self):
         data = self.arduinoData.read_until().decode('ISO-8859-1')
-        if 'FFFF' in data: # Critério de parada (último índice)
+        if 'FFFF' in data:  # Critério de parada (último índice)
             raise EOFError
         else:
             return self.get_x_y_z_dump(data)
 
-                    
     def catch_dump(self):
         with open('flash_dump.txt', 'w') as f:
             while True:
                 sleep(.1)
-                serial_buffer = self.arduinoData.read_until().decode('ISO-8859-1') # Ler linha a linha,  Decodificação para incluir \n, \r
-                if serial_buffer.startswith('0003'): # Primeira medida do dump
-                    ref_vector = self.get_x_y_z_dump(self.arduinoData.read_until().decode('ISO-8859-1'))
+                # Ler linha a linha,  Decodificação para incluir \n, \r
+                serial_buffer = self.arduinoData.read_until().decode('ISO-8859-1')
+                if serial_buffer.startswith('0003'):  # Primeira medida do dump
                     while True:
                         try:
                             current_vector = self.serial_read()
-                            angulo = self.angle_calc(ref_vector, current_vector)
-                            if angulo != 0:
-                                f.write(str(angulo) + '\n')
-                            print(angulo)
+                            f.write(str(current_vector) + '\n')
+                            print(current_vector)
                         except EOFError:
                             break
                     f.close()
                     return
-                    
-   
-        
+
+    def get_angle_list(self):
+        angle_list = list()
+        with open('flash_dump.txt', 'r') as f:
+            ref_vector = self.get_x_y_z(f.readline().rstrip().replace(
+                '(', '').replace(')', '').replace(',', ''))
+            while True:
+                values = f.readline().rstrip().replace(
+                    '(', '').replace(')', '').replace(',', '')
+                if values:
+                    curr_vector = self.get_x_y_z(values)
+                else:
+                    break
+                angle_list.append(self.angle_calc(ref_vector, curr_vector))
+            f.close()
+        return angle_list
+
 
 if __name__ == "__main__":
     SerialIO()
