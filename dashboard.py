@@ -1,11 +1,8 @@
 import sys  # We need sys so that we can pass argv to QApplication
-from random import randint
 
 import pyqtgraph as pg
-from PyQt5.QtWidgets import (QApplication, QBoxLayout, QGridLayout,
-                             QHBoxLayout, QMenu, QPushButton, QVBoxLayout,
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QMenu, QPushButton,
                              QWidget)
-from pyqtgraph import PlotWidget, plot
 
 from engine import SerialIO
 
@@ -21,19 +18,16 @@ class MainWindow(QWidget):
 
     def layout_init(self):
         self.list_button_init()
-        self.upload_data()
+        self.fetch_data()
         self.setWindowTitle('KXC Dashboard')
 
         grid = QGridLayout()
         self.setLayout(grid)
 
-        positions = [(i, j) for i in range(2) for j in range(2)]
-
         grid.addWidget(self.graphWidget, 0, 0)
         grid.addWidget(self.drop_button, 2, 2)
 
         self.move(300, 150)
-        self.setWindowTitle('KXC Dashboard')
         self.show()
 
     def list_button_init(self):
@@ -47,9 +41,9 @@ class MainWindow(QWidget):
         menu.addSeparator()
         menu.addAction('STOUT')
         self.drop_button.setMenu(menu)
-        # pybutton.clicked.connect(self.clickMethod)
+        # self.drop_button.clicked.connect(self.fetch_data)
 
-    def upload_data(self):
+    def fetch_data(self):
         self.graphWidget = pg.PlotWidget()
         self.y = self.engine.get_angle_list()
         self.x = list(range(len(self.y)))  # y time points

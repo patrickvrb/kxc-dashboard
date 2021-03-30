@@ -1,10 +1,9 @@
-import sys
 from math import acos, sqrt
 from time import sleep
 
 import serial
-from PyQt5 import QtWidgets
-from serial.serialutil import SerialException
+import serial.tools.list_ports
+from serial.serialutil import SerialException, SerialTimeoutException, Timeout
 
 
 class SerialIO():
@@ -12,12 +11,17 @@ class SerialIO():
         self.setup()
 
     def setup(self):
-        try:
-            self.arduinoData = serial.Serial('COM3', 9600)
-        except SerialException:
-            self.arduinoData = serial.Serial('COM5', 9600)
+
+        ports = list(serial.tools.list_ports.comports())
+
+        # Procura pelo Arduino conectado:
+        for p in ports:
+            if 'USB-SERIAL CH340' in p.description:
+                print('Arduino encontrado!')
+                self.arduinoData = serial.Serial(p.name, 9600, timeout=1)
 
         sleep(2)
+
         # mode = input('Modo? 0 para Real Time e 1 para Catch Dump\t')
         # mode = '1'
         # if(mode == '0'):
@@ -86,7 +90,43 @@ class SerialIO():
         sleep(1)
         self.catch_dump()
 
-    def serial_read(self):
+    def list_dir_mode(self):
+        # Forçando modo 17 (Config Mode)
+        self.arduinoData.write('17'.encode('utf-8'))
+        self.arduinoData.write('\n'.encode('utf-8'))
+        self.arduinoData.flushOutput()
+
+        # Printando todos diretórios ocupados
+        self.arduinoData.write('l'.encode('utf-8'))
+        self.arduinoData.write('\n'.encode('utf-8'))
+        self.arduinoData.flushOutput()
+        self.save_directories()
+        return
+
+    def save_directories(self):
+        with open('directories.txt', 'w') as f:
+            while True:
+                # Ler linha a linha,  Decodificação para incluir \n, \r
+                buffer = self.serial_dir_read()
+                if buffer.startswith('Dir:'):  # Primeira medida do dump
+                    while buffer:
+                        buffer = self.serial_dir_read()
+                        if buffer:
+                            f.write(buffer + '\n')
+                        print(buffer)
+                    f.close()
+                    return
+
+    def serial_dir_read(self):
+        try:
+            buffer = self.arduinoData.readline().decode('ISO-8859-1')
+        except SerialTimeoutException:
+            buffer = None
+        except EOFError:
+            buffer = None
+        return buffer.rstrip()
+
+    def serial_vector_read(self):
         data = self.arduinoData.read_until().decode('ISO-8859-1')
         if 'FFFF' in data:  # Critério de parada (último índice)
             raise EOFError
@@ -102,10 +142,12 @@ class SerialIO():
                 if serial_buffer.startswith('0003'):  # Primeira medida do dump
                     while True:
                         try:
-                            current_vector = self.serial_read()
+                            current_vector = self.serial_vector_read()
                             f.write(str(current_vector) + '\n')
-                            print(current_vector)
+                            # print(current_vector)
                         except EOFError:
+                            break
+                        except SerialTimeoutException:
                             break
                     f.close()
                     return
