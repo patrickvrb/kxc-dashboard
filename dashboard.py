@@ -13,6 +13,7 @@ class MainWindow(QWidget):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.engine = SerialIO()
         self.engine.ard_dump_mode()  # Realiza dump do arduino em engine.py
+        self.engine.list_dir_mode()
         self.layout_init()
         # self.upload_data()
 
