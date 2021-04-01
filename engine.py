@@ -9,27 +9,25 @@ from serial.serialutil import SerialException, SerialTimeoutException, Timeout
 class SerialIO():
     def __init__(self):
         self.setup()
+        self.list_dir_mode()
+
+        # self.ard_dump_mode()
 
     def setup(self):
-
         ports = list(serial.tools.list_ports.comports())
+        self.arduino_data = None
 
         # Procura pelo Arduino conectado:
         for p in ports:
             if 'USB-SERIAL CH340' in p.description:
                 print('Arduino encontrado!')
-                self.arduinoData = serial.Serial(p.name, 9600, timeout=1)
+                self.arduino_data = serial.Serial(p.name, 9600, timeout=1)
+
+        if not self.arduino_data:
+            print('Arduino não encontrado!')
+            exit()
 
         sleep(2)
-
-        # mode = input('Modo? 0 para Real Time e 1 para Catch Dump\t')
-        # mode = '1'
-        # if(mode == '0'):
-        #     self.real_time_read()
-        # elif (mode == '1'):
-        #   self.ard_dump_mode()
-        # else:
-        #     print('Modo não existente')
 
     def get_integer_value(self, str_value):
         if str_value.startswith('+'):
@@ -54,7 +52,7 @@ class SerialIO():
         reference_vector = None
         current_vector = None
         while True:
-            normalized_buffer = self.arduinoData.read_until().decode('utf-8')
+            normalized_buffer = self.arduino_data.read_until().decode('utf-8')
             if not normalized_buffer.startswith('==>'):
                 x, y, z = self.get_x_y_z(normalized_buffer)
                 current_vector = [x, y, z]
@@ -71,37 +69,53 @@ class SerialIO():
             u = sqrt(sum([vector[i] * vector[i] for i in range(3)]))
             v = sqrt(sum([ref_vector[i] * ref_vector[i] for i in range(3)]))
             angulo = acos(produto_interno/(u*v)) * 57.3
-        except ValueError:
+        except:
             angulo = 0
-        except ZeroDivisionError:
-            angulo = 0
+
         return int(round(angulo, 0))
 
-    def ard_dump_mode(self):
+    def ard_dump_mode(self, beer):
         # Forçando modo 17 (Config Mode)
-        self.arduinoData.write('17'.encode('utf-8'))
-        self.arduinoData.write('\n'.encode('utf-8'))
-        self.arduinoData.flushOutput()
-        sleep(2)
+        self.arduino_data.write('17'.encode('utf-8'))
+        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.flushOutput()
+
         # Printando dados do primeiro diretório
-        self.arduinoData.write('p 0'.encode('utf-8'))
-        self.arduinoData.write('\n'.encode('utf-8'))
-        self.arduinoData.flushOutput()
-        sleep(1)
-        self.catch_dump()
+        self.arduino_data.write(('p ' + str(beer.index)).encode('utf-8'))
+        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.flushOutput()
+
+        self.save_dump(beer.name)
+
+    def save_dump(self, beer_name):
+        with open(str(beer_name) + '_dump.txt', 'w') as f:
+            # f.write(beer_name + '\n')
+            while True:
+                # Ler linha a linha,  Decodificação para incluir \n, \r
+                serial_buffer = self.arduino_data.read_until().decode('ISO-8859-1')
+                if serial_buffer.startswith('0003'):  # Primeira medida do dump
+                    while True:
+                        try:
+                            current_vector = self.serial_vector_read()
+                            f.write(str(current_vector) + '\n')
+                        except:
+                            break
+                    self.voltar_menu_serial()
+                    f.close()
+                    return
 
     def list_dir_mode(self):
         # Forçando modo 17 (Config Mode)
-        self.arduinoData.write('17'.encode('utf-8'))
-        self.arduinoData.write('\n'.encode('utf-8'))
-        self.arduinoData.flushOutput()
+        self.arduino_data.write('17'.encode('utf-8'))
+        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.flushOutput()
 
         # Printando todos diretórios ocupados
-        self.arduinoData.write('l'.encode('utf-8'))
-        self.arduinoData.write('\n'.encode('utf-8'))
-        self.arduinoData.flushOutput()
+        self.arduino_data.write('l'.encode('utf-8'))
+        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.flushOutput()
+
         self.save_directories()
-        return
 
     def save_directories(self):
         with open('directories.txt', 'w') as f:
@@ -114,47 +128,27 @@ class SerialIO():
                         if buffer:
                             f.write(buffer + '\n')
                         print(buffer)
+                    self.voltar_menu_serial()
                     f.close()
                     return
 
     def serial_dir_read(self):
         try:
-            buffer = self.arduinoData.readline().decode('ISO-8859-1')
-        except SerialTimeoutException:
-            buffer = None
-        except EOFError:
+            buffer = self.arduino_data.readline().decode('ISO-8859-1')
+        except:
             buffer = None
         return buffer.rstrip()
 
     def serial_vector_read(self):
-        data = self.arduinoData.read_until().decode('ISO-8859-1')
+        data = self.arduino_data.read_until().decode('ISO-8859-1')
         if 'FFFF' in data:  # Critério de parada (último índice)
             raise EOFError
         else:
             return self.get_x_y_z_dump(data)
 
-    def catch_dump(self):
-        with open('flash_dump.txt', 'w') as f:
-            while True:
-                sleep(.1)
-                # Ler linha a linha,  Decodificação para incluir \n, \r
-                serial_buffer = self.arduinoData.read_until().decode('ISO-8859-1')
-                if serial_buffer.startswith('0003'):  # Primeira medida do dump
-                    while True:
-                        try:
-                            current_vector = self.serial_vector_read()
-                            f.write(str(current_vector) + '\n')
-                            # print(current_vector)
-                        except EOFError:
-                            break
-                        except SerialTimeoutException:
-                            break
-                    f.close()
-                    return
-
-    def get_angle_list(self):
+    def get_angle_list(self, beer):
         angle_list = list()
-        with open('flash_dump.txt', 'r') as f:
+        with open(str(beer) + '_dump.txt', 'r') as f:
             ref_vector = self.get_x_y_z(f.readline().rstrip().replace(
                 '(', '').replace(')', '').replace(',', ''))
             while True:
@@ -165,8 +159,33 @@ class SerialIO():
                 else:
                     break
                 angle_list.append(self.angle_calc(ref_vector, curr_vector))
+            self.voltar_menu_serial()
             f.close()
         return angle_list
+
+    def get_directories(self):
+        dir_list = list()
+        with open('directories.txt', 'r') as f:
+            for idx, line in enumerate(f, start=0):
+                beer = Beer(idx, line.split()[1])
+                dir_list.append(beer)
+            f.close()
+        return dir_list
+
+    def voltar_menu_serial(self):
+        self.arduino_data.write('x'.encode('utf-8'))
+        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.flushOutput()
+        return
+
+
+class Beer(object):
+    index = 0
+    name = ''
+
+    def __init__(self, index, name):
+        self.index = index
+        self.name = name
 
 
 if __name__ == "__main__":
