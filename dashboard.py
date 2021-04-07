@@ -33,10 +33,10 @@ class MainWindow(QWidget):
         self.drop_button.move(200, 200)
         menu = QMenu(self)
         dir_list = self.engine.get_directories()
-        for beer in dir_list:
-            action = QAction(beer.name, self)
+        for dir in dir_list:
+            action = QAction(dir.name, self)
             action.triggered.connect(
-                lambda: self.fetch_data(beer))
+                lambda checked, beer=dir: self.fetch_data(beer))
             menu.addAction(action)
             menu.addSeparator()
         self.drop_button.setMenu(menu)

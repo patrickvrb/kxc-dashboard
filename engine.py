@@ -16,9 +16,10 @@ class SerialIO():
     def setup(self):
         ports = list(serial.tools.list_ports.comports())
         self.arduino_data = None
-
+        print(ports)
         # Procura pelo Arduino conectado:
         for p in ports:
+            print(p)
             if 'USB-SERIAL CH340' in p.description:
                 print('Arduino encontrado!')
                 self.arduino_data = serial.Serial(p.name, 9600, timeout=1)
@@ -28,6 +29,8 @@ class SerialIO():
             exit()
 
         sleep(2)
+
+        # self.arduino_data.write(('#\n\r'.encode('utf-8'))
 
     def get_integer_value(self, str_value):
         if str_value.startswith('+'):
@@ -76,13 +79,12 @@ class SerialIO():
 
     def ard_dump_mode(self, beer):
         # Forçando modo 17 (Config Mode)
-        self.arduino_data.write('17'.encode('utf-8'))
-        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.write('17\n'.encode('utf-8'))
         self.arduino_data.flushOutput()
 
         # Printando dados do primeiro diretório
-        self.arduino_data.write(('p ' + str(beer.index)).encode('utf-8'))
-        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.write(
+            ('p ' + str(beer.index) + '\n').encode('utf-8'))
         self.arduino_data.flushOutput()
 
         self.save_dump(beer.name)
@@ -106,13 +108,11 @@ class SerialIO():
 
     def list_dir_mode(self):
         # Forçando modo 17 (Config Mode)
-        self.arduino_data.write('17'.encode('utf-8'))
-        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.write('17\n'.encode('utf-8'))
         self.arduino_data.flushOutput()
 
         # Printando todos diretórios ocupados
-        self.arduino_data.write('l'.encode('utf-8'))
-        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.write('l\n'.encode('utf-8'))
         self.arduino_data.flushOutput()
 
         self.save_directories()
@@ -173,8 +173,7 @@ class SerialIO():
         return dir_list
 
     def voltar_menu_serial(self):
-        self.arduino_data.write('x'.encode('utf-8'))
-        self.arduino_data.write('\n'.encode('utf-8'))
+        self.arduino_data.write('x\n'.encode('utf-8'))
         self.arduino_data.flushOutput()
         return
 
