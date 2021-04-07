@@ -21,8 +21,12 @@ class SerialIO():
         for p in ports:
             print(p)
             if 'USB-SERIAL CH340' in p.description:
-                print('Arduino encontrado!')
-                self.arduino_data = serial.Serial(p.name, 9600, timeout=1)
+                try:
+                    self.arduino_data = serial.Serial(p.name, 9600, timeout=1)
+                    print('Arduino encontrado!')
+                except Exception:
+                    print('Porta Serial Arduino ocupada!')
+                    exit()
 
         if not self.arduino_data:
             print('Arduino não encontrado!')
