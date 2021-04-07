@@ -42,18 +42,19 @@ class SerialIO():
         else:
             return int(str_value)
 
-    def get_x_y_z(self,  input_str):
-        var_list = input_str.split(' ')
-        x, y, z = [self.get_integer_value(value) for value in var_list]
-        return x, y, z
-
     def get_x_y_z_dump(self, input_str):
         # Retira o primeiro e os quatro últimos elementos da linha
-        var_list = input_str.split(' ')[1:][:-4]
+        var_list = input_str.split(' ')[1:][:-3]
         if len(var_list) == 0:
             return 0, 0, 0
         x, y, z = [self.get_integer_value(value) for value in var_list]
         return x, y, z
+
+    def get_temp_dump(self, input_str):
+        return self.get_integer_value(input_str.split(' ')[4])
+
+    def get_bat_tension_dump(self, input_str):
+        return self.get_integer_value(input_str.split(' ')[5])
 
     def real_time_read(self):
         reference_vector = None
@@ -76,35 +77,30 @@ class SerialIO():
             u = sqrt(sum([vector[i] * vector[i] for i in range(3)]))
             v = sqrt(sum([ref_vector[i] * ref_vector[i] for i in range(3)]))
             angulo = acos(produto_interno/(u*v)) * 57.3
-        except:
+        except Exception:
             angulo = 0
-
-        return int(round(angulo, 0))
+        return round(angulo, 0)
 
     def ard_dump_mode(self, beer):
         # Forçando modo 17 (Config Mode)
         self.arduino_data.write('17\n'.encode('utf-8'))
         self.arduino_data.flushOutput()
-
         # Printando dados do primeiro diretório
         self.arduino_data.write(
             ('p ' + str(beer.index) + '\n').encode('utf-8'))
         self.arduino_data.flushOutput()
-
         self.save_dump(beer.name)
 
     def save_dump(self, beer_name):
-        with open(str(beer_name) + '_dump.txt', 'w') as f:
-            # f.write(beer_name + '\n')
+        with open(beer_name + '_dump.txt', 'w') as f:
             while True:
-                # Ler linha a linha,  Decodificação para incluir \n, \r
-                serial_buffer = self.arduino_data.read_until().decode('ISO-8859-1')
-                if serial_buffer.startswith('0003'):  # Primeira medida do dump
+                buffer = self.serial_read()
+                if '#[f' in buffer:
                     while True:
-                        try:
-                            current_vector = self.serial_vector_read()
-                            f.write(str(current_vector) + '\n')
-                        except:
+                        buffer = self.serial_read()
+                        if not 'f]#' in buffer:
+                            f.write(buffer + '\n')
+                        else:
                             break
                     self.voltar_menu_serial()
                     f.close()
@@ -125,45 +121,43 @@ class SerialIO():
         with open('directories.txt', 'w') as f:
             while True:
                 # Ler linha a linha,  Decodificação para incluir \n, \r
-                buffer = self.serial_dir_read()
-                if buffer.startswith('Dir:'):  # Primeira medida do dump
+                buffer = self.serial_read()
+                if 'Dir:' in buffer:  # Primeira medida do dump
                     while buffer:
-                        buffer = self.serial_dir_read()
+                        buffer = self.serial_read()
                         if buffer:
                             f.write(buffer + '\n')
-                        print(buffer)
                     self.voltar_menu_serial()
                     f.close()
                     return
 
-    def serial_dir_read(self):
+    def serial_read(self):
         try:
             buffer = self.arduino_data.readline().decode('ISO-8859-1')
-        except:
+        except Exception:
             buffer = None
         return buffer.rstrip()
 
-    def serial_vector_read(self):
-        data = self.arduino_data.read_until().decode('ISO-8859-1')
-        if 'FFFF' in data:  # Critério de parada (último índice)
-            raise EOFError
+    def vector_read(self, buffer):
+        if 'FFFF' in buffer:  # Critério de parada (último índice)
+            raise Exception
         else:
-            return self.get_x_y_z_dump(data)
+            return self.get_x_y_z_dump(buffer)
 
     def get_angle_list(self, beer):
         angle_list = list()
-        with open(str(beer) + '_dump.txt', 'r') as f:
-            ref_vector = self.get_x_y_z(f.readline().rstrip().replace(
-                '(', '').replace(')', '').replace(',', ''))
+        buffer = ''
+        with open(beer + '_dump.txt', 'r') as f:
+            while not '0004' in buffer:
+                buffer = f.readline()
+            ref_vector = self.vector_read(buffer)
             while True:
-                values = f.readline().rstrip().replace(
-                    '(', '').replace(')', '').replace(',', '')
-                if values:
-                    curr_vector = self.get_x_y_z(values)
-                else:
+                try:
+                    buffer = f.readline()
+                    angle_list.append(
+                        self.angle_calc(ref_vector, self.vector_read(buffer)))
+                except Exception:
                     break
-                angle_list.append(self.angle_calc(ref_vector, curr_vector))
-            self.voltar_menu_serial()
             f.close()
         return angle_list
 
@@ -175,6 +169,42 @@ class SerialIO():
                 dir_list.append(beer)
             f.close()
         return dir_list
+
+    def get_tension_list(self, beer):
+        tension_list = list()
+        buffer = ''
+        with open(beer + '_dump.txt', 'r') as f:
+            while not '0004' in buffer:
+                buffer = f.readline()
+            while True:
+                try:
+                    tension = self.get_bat_tension_dump(buffer)
+                    tension_list.append(tension)
+                    buffer = f.readline()
+                    if 'FFFF' in buffer:
+                        break
+                except Exception:
+                    break
+            f.close()
+        return tension_list
+
+    def get_temp_list(self, beer):
+        temp_list = list()
+        buffer = ''
+        with open(beer + '_dump.txt', 'r') as f:
+            while not '0004' in buffer:
+                buffer = f.readline()
+            while True:
+                try:
+                    temp = self.get_temp_dump(buffer)
+                    temp_list.append(temp)
+                    buffer = f.readline()
+                    if 'FFFF' in buffer:
+                        break
+                except Exception:
+                    break
+            f.close()
+        return temp_list
 
     def voltar_menu_serial(self):
         self.arduino_data.write('x\n'.encode('utf-8'))
