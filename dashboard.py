@@ -1,6 +1,7 @@
-import sys  # We need sys so that we can pass argv to QApplication
+import sys
 
 import pyqtgraph as pg
+from PyQt5 import QtGui
 from PyQt5.QtWidgets import (QAction, QApplication, QGridLayout, QMenu,
                              QPushButton, QWidget)
 
@@ -17,7 +18,8 @@ class MainWindow(QWidget):
     def layout_init(self):
         self.list_button_init()
         self.setWindowTitle('KXC Dashboard')
-        self.setMinimumSize(500, 200)
+        self.setWindowIcon(QtGui.QIcon('assets/beer.png'))
+        self.setMinimumSize(750, 450)
         self.grid = QGridLayout()
         self.setLayout(self.grid)
         self.grid.addWidget(self.drop_button, 1, 1)
@@ -40,42 +42,39 @@ class MainWindow(QWidget):
 
     def fetch_data(self, beer):
         self.engine.ard_dump_mode(beer)
-        self.angles_graph(beer)
-        self.tension_graph(beer)
-        self.temp_graph(beer)
-        return
+        self.tension_list, self.temp_list, self.angle_list = self.engine.get_measures_lists(
+            beer)
 
-    def angles_graph(self, beer):
+        self.build_graphs()
+
+    def build_graphs(self):
         graphWidget = pg.PlotWidget()
         graphWidget.setTitle('Variação Angular')
-        y = self.engine.get_angle_list(beer.name)
+        y = self.angle_list
         x = list(range(len(y)))  # y time points
         graphWidget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 0))
         graphWidget.plot(x, y, pen=pen)
         self.grid.addWidget(graphWidget, 0, 0)
-        return
 
-    def tension_graph(self, beer):
         graphWidget = pg.PlotWidget()
         graphWidget.setTitle('Tensão da bateria')
-        y = self.engine.get_tension_list(beer.name)
+        y = self.tension_list
         x = list(range(len(y)))  # y time points
         graphWidget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 255))
         graphWidget.plot(x, y, pen=pen)
         self.grid.addWidget(graphWidget, 0, 1)
-        return
 
-    def temp_graph(self, beer):
         graphWidget = pg.PlotWidget()
         graphWidget.setTitle('Temperatura')
-        y = self.engine.get_temp_list(beer.name)
+        y = self.temp_list
         x = list(range(len(y)))  # y time points
         graphWidget.setBackground('w')
-        pen = pg.mkPen(color=(255, 255, 0))
+        pen = pg.mkPen(color=(50, 0, 150))
         graphWidget.plot(x, y, pen=pen)
         self.grid.addWidget(graphWidget, 1, 0)
+
         return
 
     def update_plot_data(self, data):

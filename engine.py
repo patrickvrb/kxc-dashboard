@@ -131,36 +131,6 @@ class SerialIO():
                     f.close()
                     return
 
-    def serial_read(self):
-        try:
-            buffer = self.arduino_data.readline().decode('ISO-8859-1')
-        except Exception:
-            buffer = None
-        return buffer.rstrip()
-
-    def vector_read(self, buffer):
-        if 'FFFF' in buffer:  # Critério de parada (último índice)
-            raise Exception
-        else:
-            return self.get_x_y_z_dump(buffer)
-
-    def get_angle_list(self, beer):
-        angle_list = list()
-        buffer = ''
-        with open(beer + '_dump.txt', 'r') as f:
-            while not '0004' in buffer:
-                buffer = f.readline()
-            ref_vector = self.vector_read(buffer)
-            while True:
-                try:
-                    buffer = f.readline()
-                    angle_list.append(
-                        self.angle_calc(ref_vector, self.vector_read(buffer)))
-                except Exception:
-                    break
-            f.close()
-        return angle_list
-
     def get_directories(self):
         dir_list = list()
         with open('directories.txt', 'r') as f:
@@ -170,41 +140,40 @@ class SerialIO():
             f.close()
         return dir_list
 
-    def get_tension_list(self, beer):
+    def serial_read(self):
+        try:
+            buffer = self.arduino_data.readline().decode('ISO-8859-1')
+        except Exception:
+            buffer = None
+        return buffer.rstrip()
+
+    def get_measures_lists(self, beer):
         tension_list = list()
+        temp_list = list()
+        angle_list = list()
         buffer = ''
-        with open(beer + '_dump.txt', 'r') as f:
-            while not '0004' in buffer:
+        with open(beer.name + '_dump.txt', 'r') as f:
+            while buffer[:4] != '0004':
                 buffer = f.readline()
+            ref_vector = self.get_x_y_z_dump(buffer)
             while True:
                 try:
                     tension = self.get_bat_tension_dump(buffer)
                     tension_list.append(tension)
-                    buffer = f.readline()
-                    if 'FFFF' in buffer:
-                        break
-                except Exception:
-                    break
-            f.close()
-        return tension_list
 
-    def get_temp_list(self, beer):
-        temp_list = list()
-        buffer = ''
-        with open(beer + '_dump.txt', 'r') as f:
-            while not '0004' in buffer:
-                buffer = f.readline()
-            while True:
-                try:
                     temp = self.get_temp_dump(buffer)
                     temp_list.append(temp)
+
+                    vector = self.get_x_y_z_dump(buffer)
+                    angle_list.append(self.angle_calc(ref_vector, vector))
+
                     buffer = f.readline()
-                    if 'FFFF' in buffer:
+                    if buffer[:4] == 'FFFF':
                         break
                 except Exception:
                     break
             f.close()
-        return temp_list
+        return tension_list, temp_list, angle_list
 
     def voltar_menu_serial(self):
         self.arduino_data.write('x\n'.encode('utf-8'))
