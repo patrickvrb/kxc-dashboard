@@ -11,15 +11,11 @@ class SerialIO():
         self.setup()
         self.list_dir_mode()
 
-        # self.ard_dump_mode()
-
     def setup(self):
         ports = list(serial.tools.list_ports.comports())
         self.arduino_data = None
-        print(ports)
         # Procura pelo Arduino conectado:
         for p in ports:
-            print(p)
             if 'USB-SERIAL CH340' in p.description:
                 try:
                     self.arduino_data = serial.Serial(p.name, 9600, timeout=1)
@@ -33,8 +29,6 @@ class SerialIO():
             exit()
 
         sleep(2)
-
-        # self.arduino_data.write(('#\n\r'.encode('utf-8'))
 
     def get_integer_value(self, str_value):
         if str_value.startswith('+'):
@@ -52,7 +46,7 @@ class SerialIO():
 
     def get_temp_dump(self, input_str):
         temp = self.get_integer_value(input_str.split(' ')[4]) / 10
-        if 0 > temp < 50:
+        if temp < 0 or temp > 50:
             return self.prev_temp
         else:
             self.prev_temp = temp

@@ -1,4 +1,5 @@
 import sys
+from os import stat_result
 
 import pyqtgraph as pg
 from PyQt5 import QtGui
@@ -34,7 +35,7 @@ class MainWindow(QWidget):
         for dir in dir_list:
             action = QAction(dir.name, self)
             action.triggered.connect(
-                lambda checked, beer=dir: self.fetch_data(beer))
+                lambda _, beer=dir: self.fetch_data(beer))
             menu.addAction(action)
             menu.addSeparator()
         self.drop_button.setMenu(menu)
@@ -51,6 +52,12 @@ class MainWindow(QWidget):
         graphWidget = pg.PlotWidget()
         graphWidget.setTitle('Variação Angular')
         y = self.angle_list
+
+        for idx, _ in enumerate(y):
+            if idx % 24 == 0:
+                graphWidget.addItem(pg.InfiniteLine(
+                    pos=idx), ignoreBounds=True)
+
         x = list(range(len(y)))  # y time points
         graphWidget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 0))
@@ -60,6 +67,12 @@ class MainWindow(QWidget):
         graphWidget = pg.PlotWidget()
         graphWidget.setTitle('Tensão da bateria')
         y = self.tension_list
+
+        for idx, _ in enumerate(y):
+            if idx % 24 == 0:
+                graphWidget.addItem(pg.InfiniteLine(
+                    pos=idx), ignoreBounds=True)
+
         x = list(range(len(y)))  # y time points
         graphWidget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 255))
@@ -69,6 +82,12 @@ class MainWindow(QWidget):
         graphWidget = pg.PlotWidget()
         graphWidget.setTitle('Temperatura')
         y = self.temp_list
+
+        for idx, _ in enumerate(y):
+            if idx % 24 == 0:
+                graphWidget.addItem(pg.InfiniteLine(
+                    pos=idx), ignoreBounds=True)
+
         x = list(range(len(y)))  # y time points
         graphWidget.setBackground('w')
         pen = pg.mkPen(color=(50, 0, 150))
