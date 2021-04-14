@@ -1,8 +1,8 @@
 import sys
-from os import stat_result
 
 import pyqtgraph as pg
 from PyQt5 import QtGui
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import (QAction, QApplication, QGridLayout, QMenu,
                              QPushButton, QWidget)
 
@@ -23,13 +23,14 @@ class MainWindow(QWidget):
         self.setMinimumSize(750, 450)
         self.grid = QGridLayout()
         self.setLayout(self.grid)
-        self.grid.addWidget(self.drop_button, 1, 1)
+        self.grid.addWidget(self.drop_button, 1, 1,
+                            Qt.AlignmentFlag.AlignCenter)
         self.show()
 
     def list_button_init(self):
         self.drop_button = QPushButton('CERVEJAS', self)
-        self.drop_button.resize(100, 32)
-        self.drop_button.move(200, 200)
+        # self.drop_button.resize(100, 32)
+        # self.drop_button.move(200, 200)
         menu = QMenu(self)
         dir_list = self.engine.get_directories()
         for dir in dir_list:
@@ -39,6 +40,7 @@ class MainWindow(QWidget):
             menu.addAction(action)
             menu.addSeparator()
         self.drop_button.setMenu(menu)
+        self.drop_button.setStyleSheet(self.get_button_stylesheet())
         return
 
     def fetch_data(self, beer):
@@ -55,6 +57,9 @@ class MainWindow(QWidget):
         x = list(range(len(y)))  # y time points
         angles_widget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 0))
+        angles_widget.setLabel('left', 'Ângulo (DEG)')
+        angles_widget.setLabel('bottom', 'Medições')
+        angles_widget.showGrid(x=True, y=True)
         angles_widget.plot(x, y, pen=pen)
 
         tension_widget = pg.PlotWidget()
@@ -63,6 +68,9 @@ class MainWindow(QWidget):
         x = list(range(len(y)))  # y time points
         tension_widget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 255))
+        tension_widget.setLabel('left', 'Tensão (V)')
+        tension_widget.setLabel('bottom', 'Medições')
+        tension_widget.showGrid(x=True, y=True)
         tension_widget.plot(x, y, pen=pen)
 
         temp_widget = pg.PlotWidget()
@@ -71,6 +79,9 @@ class MainWindow(QWidget):
         x = list(range(len(y)))  # y time points
         temp_widget.setBackground('w')
         pen = pg.mkPen(color=(50, 0, 150))
+        temp_widget.setLabel('left', 'Temperatura (°C)')
+        temp_widget.setLabel('bottom', 'Medições')
+        # temp_widget.showGrid(x=True, y=True)
         temp_widget.plot(x, y, pen=pen)
 
         for idx, _ in enumerate(y):
@@ -79,8 +90,8 @@ class MainWindow(QWidget):
                     pos=idx), ignoreBounds=True)
                 temp_widget.addItem(pg.InfiniteLine(
                     pos=idx), ignoreBounds=True)
-                tension_widget.addItem(pg.InfiniteLine(
-                    pos=idx), ignoreBounds=True)
+                # tension_widget.addItem(pg.InfiniteLine(
+                #     pos=idx), ignoreBounds=True)
 
         self.grid.addWidget(angles_widget, 0, 0)
         self.grid.addWidget(tension_widget, 0, 1)
@@ -98,6 +109,9 @@ class MainWindow(QWidget):
         self.y.append(data)  # Add the new value.
 
         self.data_line.setData(self.x, self.y)  # Update the data.
+
+    def get_button_stylesheet(self):
+        return "background-color: white;border-style: outset;border-width: 2px;border-radius: 10px;border-color: beige; font: 14px; min-width: 10.5em;padding: 6px;"
 
 
 if __name__ == "__main__":

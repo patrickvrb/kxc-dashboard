@@ -88,7 +88,7 @@ class SerialIO():
         self.arduino_data.write(
             ('p ' + str(beer.index) + '\n').encode('utf-8'))
         self.arduino_data.flushOutput()
-        self.save_dump(beer.name)
+        self.save_dump(beer.name[0])
 
     def save_dump(self, beer_name):
         with open(beer_name + '_dump.txt', 'w') as f:
@@ -132,7 +132,8 @@ class SerialIO():
         dir_list = list()
         with open('directories.txt', 'r') as f:
             for idx, line in enumerate(f, start=0):
-                beer = Beer(idx, line.split()[1])
+                beer = Beer(idx, line.split()[
+                            1] + ' - ' + line.split()[2] + ' - ' + line.split()[3])
                 dir_list.append(beer)
         return dir_list
 
@@ -148,7 +149,7 @@ class SerialIO():
         temp_list = list()
         angle_list = list()
         buffer = ''
-        with open(beer.name + '_dump.txt', 'r') as f:
+        with open(beer.name[0] + '_dump.txt', 'r') as f:
             while buffer[:4] != '0004':
                 buffer = f.readline()
             ref_vector = self.get_x_y_z_dump(buffer)
