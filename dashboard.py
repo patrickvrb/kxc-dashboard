@@ -49,50 +49,42 @@ class MainWindow(QWidget):
         self.build_graphs()
 
     def build_graphs(self):
-        graphWidget = pg.PlotWidget()
-        graphWidget.setTitle('Variação Angular')
+        angles_widget = pg.PlotWidget()
+        angles_widget.setTitle('Variação Angular')
         y = self.angle_list
-
-        for idx, _ in enumerate(y):
-            if idx % 24 == 0:
-                graphWidget.addItem(pg.InfiniteLine(
-                    pos=idx), ignoreBounds=True)
-
         x = list(range(len(y)))  # y time points
-        graphWidget.setBackground('w')
+        angles_widget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 0))
-        graphWidget.plot(x, y, pen=pen)
-        self.grid.addWidget(graphWidget, 0, 0)
+        angles_widget.plot(x, y, pen=pen)
 
-        graphWidget = pg.PlotWidget()
-        graphWidget.setTitle('Tensão da bateria')
+        tension_widget = pg.PlotWidget()
+        tension_widget.setTitle('Tensão da bateria')
         y = self.tension_list
-
-        for idx, _ in enumerate(y):
-            if idx % 24 == 0:
-                graphWidget.addItem(pg.InfiniteLine(
-                    pos=idx), ignoreBounds=True)
-
         x = list(range(len(y)))  # y time points
-        graphWidget.setBackground('w')
+        tension_widget.setBackground('w')
         pen = pg.mkPen(color=(255, 0, 255))
-        graphWidget.plot(x, y, pen=pen)
-        self.grid.addWidget(graphWidget, 0, 1)
+        tension_widget.plot(x, y, pen=pen)
 
-        graphWidget = pg.PlotWidget()
-        graphWidget.setTitle('Temperatura')
+        temp_widget = pg.PlotWidget()
+        temp_widget.setTitle('Temperatura')
         y = self.temp_list
+        x = list(range(len(y)))  # y time points
+        temp_widget.setBackground('w')
+        pen = pg.mkPen(color=(50, 0, 150))
+        temp_widget.plot(x, y, pen=pen)
 
         for idx, _ in enumerate(y):
             if idx % 24 == 0:
-                graphWidget.addItem(pg.InfiniteLine(
+                angles_widget.addItem(pg.InfiniteLine(
+                    pos=idx), ignoreBounds=True)
+                temp_widget.addItem(pg.InfiniteLine(
+                    pos=idx), ignoreBounds=True)
+                tension_widget.addItem(pg.InfiniteLine(
                     pos=idx), ignoreBounds=True)
 
-        x = list(range(len(y)))  # y time points
-        graphWidget.setBackground('w')
-        pen = pg.mkPen(color=(50, 0, 150))
-        graphWidget.plot(x, y, pen=pen)
-        self.grid.addWidget(graphWidget, 1, 0)
+        self.grid.addWidget(angles_widget, 0, 0)
+        self.grid.addWidget(tension_widget, 0, 1)
+        self.grid.addWidget(temp_widget, 1, 0)
 
         return
 
