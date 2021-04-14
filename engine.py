@@ -51,7 +51,12 @@ class SerialIO():
         return x, y, z
 
     def get_temp_dump(self, input_str):
-        return self.get_integer_value(input_str.split(' ')[4])
+        temp = self.get_integer_value(input_str.split(' ')[4]) / 10
+        if 0 > temp < 50:
+            return self.prev_temp
+        else:
+            self.prev_temp = temp
+            return temp
 
     def get_bat_tension_dump(self, input_str):
         return self.get_integer_value(input_str.split(' ')[5])
@@ -103,7 +108,6 @@ class SerialIO():
                         else:
                             break
                     self.voltar_menu_serial()
-                    f.close()
                     return
 
     def list_dir_mode(self):
@@ -128,7 +132,6 @@ class SerialIO():
                         if buffer:
                             f.write(buffer + '\n')
                     self.voltar_menu_serial()
-                    f.close()
                     return
 
     def get_directories(self):
@@ -137,7 +140,6 @@ class SerialIO():
             for idx, line in enumerate(f, start=0):
                 beer = Beer(idx, line.split()[1])
                 dir_list.append(beer)
-            f.close()
         return dir_list
 
     def serial_read(self):
@@ -172,7 +174,6 @@ class SerialIO():
                         break
                 except Exception:
                     break
-            f.close()
         return tension_list, temp_list, angle_list
 
     def voltar_menu_serial(self):
