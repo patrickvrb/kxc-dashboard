@@ -148,6 +148,7 @@ class SerialIO():
         tension_list = list()
         temp_list = list()
         angle_list = list()
+        coord_list = list()
         buffer = ''
         with open(beer.name[0] + '_dump.txt', 'r') as f:
             while buffer[:4] != '0004':
@@ -164,12 +165,14 @@ class SerialIO():
                     vector = self.get_x_y_z_dump(buffer)
                     angle_list.append(self.angle_calc(ref_vector, vector))
 
+                    coord_list.append(self.get_x_y_z_dump(buffer))
+
                     buffer = f.readline()
                     if buffer[:4] == 'FFFF':
                         break
                 except Exception:
                     break
-        return tension_list, temp_list, angle_list
+        return tension_list, temp_list, angle_list, coord_list
 
     def voltar_menu_serial(self):
         self.arduino_data.write('x\n'.encode('utf-8'))

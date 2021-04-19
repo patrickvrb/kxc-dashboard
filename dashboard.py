@@ -1,7 +1,7 @@
 import sys
 
 import pyqtgraph as pg
-from PyQt5 import QtGui
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import (QAction, QApplication, QGridLayout, QMenu,
                              QPushButton, QWidget)
@@ -45,7 +45,7 @@ class MainWindow(QWidget):
 
     def fetch_data(self, beer):
         self.engine.ard_dump_mode(beer)
-        self.tension_list, self.temp_list, self.angle_list = self.engine.get_measures_lists(
+        self.tension_list, self.temp_list, self.angle_list, self.coord_list = self.engine.get_measures_lists(
             beer)
 
         self.build_graphs()
@@ -56,7 +56,7 @@ class MainWindow(QWidget):
         y = self.angle_list
         x = list(range(len(y)))  # y time points
         angles_widget.setBackground('w')
-        pen = pg.mkPen(color=(255, 0, 0))
+        pen = pg.mkPen(color=(255, 0, 0), width=2)
         angles_widget.setLabel('left', 'Ângulo (DEG)')
         angles_widget.setLabel('bottom', 'Medições')
         angles_widget.showGrid(x=True, y=True)
@@ -67,7 +67,7 @@ class MainWindow(QWidget):
         y = self.tension_list
         x = list(range(len(y)))  # y time points
         tension_widget.setBackground('w')
-        pen = pg.mkPen(color=(255, 0, 255))
+        pen = pg.mkPen(color=(255, 0, 255), width=2)
         tension_widget.setLabel('left', 'Tensão (V)')
         tension_widget.setLabel('bottom', 'Medições')
         tension_widget.showGrid(x=True, y=True)
@@ -78,24 +78,52 @@ class MainWindow(QWidget):
         y = self.temp_list
         x = list(range(len(y)))  # y time points
         temp_widget.setBackground('w')
-        pen = pg.mkPen(color=(50, 0, 150))
+        pen = pg.mkPen(color=(50, 0, 150), width=2)
         temp_widget.setLabel('left', 'Temperatura (°C)')
         temp_widget.setLabel('bottom', 'Medições')
-        # temp_widget.showGrid(x=True, y=True)
+        temp_widget.showGrid(x=True, y=True)
         temp_widget.plot(x, y, pen=pen)
 
+        coord_widget = pg.PlotWidget()
+        coord_widget.setTitle('Coordenadas')
+        x_list = list()
+        y_list = list()
+        z_list = list()
+        y = self.coord_list
+        for coord in y:
+            x_list.append(coord[0])
+            y_list.append(coord[1])
+            z_list.append(coord[2])
+
+        x = list(range(len(y)))  # y time points
+        coord_widget.setBackground('w')
+        coord_widget.setLabel('left', 'Valores')
+        coord_widget.setLabel('bottom', 'Medições')
+        coord_widget.showGrid(x=True, y=True)
+        coord_widget.addLegend()
+        coord_widget.plot(x, x_list, name="Eixo X", pen=pg.mkPen(
+            color=(54, 213, 46), width=2))
+        coord_widget.plot(x, y_list, name="Eixo Y", pen=pg.mkPen(
+            color=(46, 54, 213), width=2))
+        coord_widget.plot(x, z_list, name="Eixo Z", pen=pg.mkPen(
+            color=(213, 46, 54), width=2))
         for idx, _ in enumerate(y):
             if idx % 24 == 0:
                 angles_widget.addItem(pg.InfiniteLine(
                     pos=idx), ignoreBounds=True)
                 temp_widget.addItem(pg.InfiniteLine(
                     pos=idx), ignoreBounds=True)
-                # tension_widget.addItem(pg.InfiniteLine(
-                #     pos=idx), ignoreBounds=True)
+                tension_widget.addItem(pg.InfiniteLine(
+                    pos=idx), ignoreBounds=True)
+                coord_widget.addItem(pg.InfiniteLine(
+                    pos=idx), ignoreBounds=True)
 
         self.grid.addWidget(angles_widget, 0, 0)
         self.grid.addWidget(tension_widget, 0, 1)
         self.grid.addWidget(temp_widget, 1, 0)
+        self.grid.addWidget(coord_widget, 1, 1)
+        self.grid.addWidget(self.drop_button, 2, 0, 1, 2,
+                            Qt.AlignmentFlag.AlignCenter)
 
         return
 
@@ -111,7 +139,7 @@ class MainWindow(QWidget):
         self.data_line.setData(self.x, self.y)  # Update the data.
 
     def get_button_stylesheet(self):
-        return "background-color: white;border-style: outset;border-width: 2px;border-radius: 10px;border-color: beige; font: 14px; min-width: 10.5em;padding: 6px;"
+        return "background-color: white;border-style: outset;border-width: 2px;border-radius: 10px;border-color: orange; font: 14px; min-width: 10.5em;padding: 6px;"
 
 
 if __name__ == "__main__":
