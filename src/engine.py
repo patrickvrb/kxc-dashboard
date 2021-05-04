@@ -3,7 +3,6 @@ from time import sleep
 
 import serial
 import serial.tools.list_ports
-from serial.serialutil import SerialException, SerialTimeoutException, Timeout
 
 
 class SerialIO():
@@ -88,10 +87,10 @@ class SerialIO():
         self.arduino_data.write(
             ('p ' + str(beer.index) + '\n').encode('utf-8'))
         self.arduino_data.flushOutput()
-        self.save_dump(beer.name[0])
+        self.save_dump(beer.name.split(' ')[0])
 
     def save_dump(self, beer_name):
-        with open(beer_name + '_dump.txt', 'w') as f:
+        with open('dumps/' + beer_name + '_dump.txt', 'w') as f:
             while True:
                 buffer = self.serial_read()
                 if '#[f' in buffer:
@@ -116,7 +115,7 @@ class SerialIO():
         self.save_directories()
 
     def save_directories(self):
-        with open('directories.txt', 'w') as f:
+        with open('dumps/directories.txt', 'w') as f:
             while True:
                 # Ler linha a linha,  Decodificação para incluir \n, \r
                 buffer = self.serial_read()
@@ -130,7 +129,7 @@ class SerialIO():
 
     def get_directories(self):
         dir_list = list()
-        with open('directories.txt', 'r') as f:
+        with open('dumps/directories.txt', 'r') as f:
             for idx, line in enumerate(f, start=0):
                 beer = Beer(idx, line.split()[
                             1] + ' - ' + line.split()[2] + ' - ' + line.split()[3])
@@ -150,7 +149,7 @@ class SerialIO():
         angle_list = list()
         coord_list = list()
         buffer = ''
-        with open(beer.name[0] + '_dump.txt', 'r') as f:
+        with open('dumps/'+beer.name.split(' ')[0] + '_dump.txt', 'r') as f:
             while buffer[:4] != '0004':
                 buffer = f.readline()
             ref_vector = self.get_x_y_z_dump(buffer)

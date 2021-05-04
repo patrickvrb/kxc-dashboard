@@ -1,25 +1,25 @@
 import sys
 
 import pyqtgraph as pg
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSize, Qt
+from PyQt5 import QtGui
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QAction, QApplication, QGridLayout, QMenu,
                              QPushButton, QWidget)
 
 from engine import SerialIO
 
 
-class MainWindow(QWidget):
+class Dashboard(QWidget):
 
     def __init__(self, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
+        super(Dashboard, self).__init__(*args, **kwargs)
         self.engine = SerialIO()
         self.layout_init()
 
     def layout_init(self):
         self.list_button_init()
         self.setWindowTitle('KXC Dashboard')
-        self.setWindowIcon(QtGui.QIcon('assets/beer.png'))
+        self.setWindowIcon(QtGui.QIcon('assets/beer.ico'))
         self.setMinimumSize(750, 450)
         self.grid = QGridLayout()
         self.setLayout(self.grid)
@@ -102,11 +102,11 @@ class MainWindow(QWidget):
         coord_widget.showGrid(x=True, y=True)
         coord_widget.addLegend()
         coord_widget.plot(x, x_list, name="Eixo X", pen=pg.mkPen(
-            color=(54, 213, 46), width=2))
+            color=(255, 0, 0), width=2))
         coord_widget.plot(x, y_list, name="Eixo Y", pen=pg.mkPen(
-            color=(46, 54, 213), width=2))
+            color=(0, 255, 0), width=2))
         coord_widget.plot(x, z_list, name="Eixo Z", pen=pg.mkPen(
-            color=(213, 46, 54), width=2))
+            color=(0, 0, 255), width=2))
         for idx, _ in enumerate(y):
             if idx % 24 == 0:
                 angles_widget.addItem(pg.InfiniteLine(
@@ -144,6 +144,6 @@ class MainWindow(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    w = MainWindow()
+    w = Dashboard()
     w.show()
     sys.exit(app.exec_())
