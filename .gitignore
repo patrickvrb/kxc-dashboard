@@ -129,6 +129,4 @@ dmypy.json
 .pyre/
 .vscode/launch.json
 .vscode
-flash_dump.txt
-directories.txt
-*_dump.txt
+dumps

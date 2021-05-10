@@ -1,4 +1,4 @@
-from math import acos, sqrt
+from math import acos, pi, sqrt
 from time import sleep
 
 import serial
@@ -68,13 +68,14 @@ class SerialIO():
                     angulo = self.angle_calc(reference_vector, current_vector)
                     print(round(angulo, 0))
 
-    def angle_calc(self, ref_vector, vector):
+    def angle_calc(self, coord_vertical, vector):
         try:
-            produto_interno = sum([vector[i] * ref_vector[i]
+            produto_interno = sum([vector[i] * coord_vertical[i]
                                   for i in range(3)])
             u = sqrt(sum([vector[i] * vector[i] for i in range(3)]))
-            v = sqrt(sum([ref_vector[i] * ref_vector[i] for i in range(3)]))
-            angulo = acos(produto_interno/(u*v)) * 57.3
+            v = sqrt(sum([coord_vertical[i] * coord_vertical[i]
+                     for i in range(3)]))
+            angulo = acos(produto_interno/(u*v)) * 180/pi
         except Exception:
             angulo = 0
         return round(angulo, 0)
@@ -152,7 +153,9 @@ class SerialIO():
         with open('dumps/'+beer.name.split(' ')[0] + '_dump.txt', 'r') as f:
             while buffer[:4] != '0004':
                 buffer = f.readline()
-            ref_vector = self.get_x_y_z_dump(buffer)
+
+            # Vetor referencia fixado na vertical [0, 16500, 0]
+            coord_vertical = [0, 16500, 0]
             while True:
                 try:
                     tension = self.get_bat_tension_dump(buffer)
@@ -162,7 +165,7 @@ class SerialIO():
                     temp_list.append(temp)
 
                     vector = self.get_x_y_z_dump(buffer)
-                    angle_list.append(self.angle_calc(ref_vector, vector))
+                    angle_list.append(self.angle_calc(coord_vertical, vector))
 
                     coord_list.append(self.get_x_y_z_dump(buffer))
 
