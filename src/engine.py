@@ -52,7 +52,7 @@ class SerialIO():
             return temp
 
     def get_bat_tension_dump(self, input_str):
-        return self.get_integer_value(input_str.split(' ')[5])
+        return self.get_integer_value(input_str.split(' ')[5]) / 100
 
     def real_time_read(self):
         reference_vector = None
@@ -152,10 +152,10 @@ class SerialIO():
         buffer = ''
         with open('dumps/'+beer.name.split(' ')[0] + '_dump.txt', 'r') as f:
             while buffer[:4] != '0004':
-                buffer = f.readline()
+                buffer = f.readline().strip()
 
-            # Vetor referencia fixado na vertical [0, 16500, 0]
-            coord_vertical = [0, 16500, 0]
+            # Vetor referencia fixado na vertical [0, 16704, 0]
+            coord_vertical = [0, 16704, 0]
             while True:
                 try:
                     tension = self.get_bat_tension_dump(buffer)
@@ -169,7 +169,7 @@ class SerialIO():
 
                     coord_list.append(self.get_x_y_z_dump(buffer))
 
-                    buffer = f.readline()
+                    buffer = f.readline().strip()
                     if buffer[:4] == 'FFFF':
                         break
                 except Exception:

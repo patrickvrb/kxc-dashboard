@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QAction, QApplication, QGridLayout, QMenu,
                              QPushButton, QWidget)
 
-from engine import SerialIO
+from engine import Beer, SerialIO
 
 
 class Dashboard(QWidget):
@@ -25,6 +25,7 @@ class Dashboard(QWidget):
         self.setLayout(self.grid)
         self.grid.addWidget(self.drop_button, 1, 1,
                             Qt.AlignmentFlag.AlignCenter)
+        self.get_fermentation()
         self.show()
 
     def list_button_init(self):
@@ -43,12 +44,20 @@ class Dashboard(QWidget):
         self.drop_button.setStyleSheet(self.get_button_stylesheet())
         return
 
+    def get_fermentation(self):
+        self.button = QPushButton('Fermentação', self)
+        beer = Beer(7, 'EIPA')
+        self.button.clicked.connect(lambda : self.fetch_data(beer))
+        self.button.setStyleSheet(self.get_button_stylesheet())
+        self.grid.addWidget(self.button, 0, 0,Qt.AlignmentFlag.AlignCenter)
+        return
+
     def fetch_data(self, beer):
-        self.engine.ard_dump_mode(beer)
+        # self.engine.ard_dump_mode(beer)
         self.tension_list, self.temp_list, self.angle_list, self.coord_list = self.engine.get_measures_lists(
             beer)
 
-        self.build_graphs()
+        return self.build_graphs()
 
     def build_graphs(self):
         angles_widget = pg.PlotWidget()
@@ -59,7 +68,7 @@ class Dashboard(QWidget):
         pen = pg.mkPen(color=(255, 0, 0), width=2)
         angles_widget.setLabel('left', 'Ângulo (DEG)')
         angles_widget.setLabel('bottom', 'Medições')
-        angles_widget.showGrid(x=True, y=True)
+        angles_widget.showGrid(x=False, y=True)
         angles_widget.plot(x, y, pen=pen)
 
         tension_widget = pg.PlotWidget()
@@ -70,7 +79,7 @@ class Dashboard(QWidget):
         pen = pg.mkPen(color=(255, 0, 255), width=2)
         tension_widget.setLabel('left', 'Tensão (V)')
         tension_widget.setLabel('bottom', 'Medições')
-        tension_widget.showGrid(x=True, y=True)
+        tension_widget.showGrid(x=False, y=True)
         tension_widget.plot(x, y, pen=pen)
 
         temp_widget = pg.PlotWidget()
@@ -81,7 +90,7 @@ class Dashboard(QWidget):
         pen = pg.mkPen(color=(50, 0, 150), width=2)
         temp_widget.setLabel('left', 'Temperatura (°C)')
         temp_widget.setLabel('bottom', 'Medições')
-        temp_widget.showGrid(x=True, y=True)
+        temp_widget.showGrid(x=False, y=True)
         temp_widget.plot(x, y, pen=pen)
 
         coord_widget = pg.PlotWidget()
@@ -99,7 +108,7 @@ class Dashboard(QWidget):
         coord_widget.setBackground('w')
         coord_widget.setLabel('left', 'Valores')
         coord_widget.setLabel('bottom', 'Medições')
-        coord_widget.showGrid(x=True, y=True)
+        coord_widget.showGrid(x=False, y=True)
         coord_widget.addLegend()
         coord_widget.plot(x, x_list, name="Eixo X", pen=pg.mkPen(
             color=(255, 0, 0), width=2))
