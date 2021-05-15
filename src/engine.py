@@ -154,8 +154,8 @@ class SerialIO():
             while buffer[:4] != '0004':
                 buffer = f.readline()
 
-            # Vetor referencia fixado na vertical [0, 16500, 0]
-            coord_vertical = [0, 16500, 0]
+            # Vetor referencia fixado na vertical [0, 16704, 0]
+            coord_vertical = [0, 16704, 0]
             while True:
                 try:
                     tension = self.get_bat_tension_dump(buffer)
