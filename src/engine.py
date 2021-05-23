@@ -91,18 +91,22 @@ class SerialIO():
         self.save_dump(beer.name.split(' ')[0])
 
     def save_dump(self, beer_name):
-        with open('dumps/' + beer_name + '_dump.txt', 'w') as f:
-            while True:
-                buffer = self.serial_read()
-                if '#[f' in buffer:
-                    while True:
-                        buffer = self.serial_read()
-                        if not 'f]#' in buffer:
-                            f.write(buffer + '\n')
-                        else:
-                            break
-                    self.voltar_menu_serial()
-                    return
+        try:
+            open('dumps/' + beer_name + '_dump.txt')
+        except:
+            with open('dumps/' + beer_name + '_dump.txt', 'w') as f:
+                while True:
+                    buffer = self.serial_read()
+                    if '#[f' in buffer:
+                        while True:
+                            buffer = self.serial_read()
+                            if not 'f]#' in buffer:
+                                f.write(buffer + '\n')
+                            else:
+                                break
+                        self.voltar_menu_serial()
+        finally:
+            return
 
     def list_dir_mode(self):
         # Forçando modo 17 (Config Mode)
